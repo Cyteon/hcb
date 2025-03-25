@@ -4,6 +4,7 @@ services:
     image: "postgres:11.16"
     volumes:
       - pg-data:/var/lib/postgresql/data
+      - pg-socket:/var/run/postgresql
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
   redis:
@@ -27,9 +28,21 @@ services:
       REDIS_URL: redis://redis:6379
     ports:
       - 3000:3000
+  jobs:
+    env_file:
+      - .env.development
+    build: ./
+    depends_on: [ web, redis, db ]
+    environment:
+      RAILS_MAX_THREADS: 4 # 4 threads x 3 workers = 12 threads
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - pg-socket:/var/run/postgresql
+    command: bundle exec sidekiq
 
 volumes:
   pg-data:
+  pg-socket:
   redis-data:
   tmp:
   gems:
