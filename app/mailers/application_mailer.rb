@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class ApplicationMailer < ActionMailer::Base
-  OPERATIONS_EMAIL = "hcb@hackclub.com"
+  OPERATIONS_EMAIL = "hcb@hcb.cyteon.dev"
 
-  DOMAIN = Rails.env.production? ? "hackclub.com" : "staging.hcb.hackclub.com"
-  default from: "HCB <hcb@#{DOMAIN}>"
+  DOMAIN = "hcb.cyteon.dev"
+  default from: "HCB (Cyteon's Instance) <hcb@hcb.cyteon.dev>"
   layout "mailer/default"
 
   # allow usage of application helper
@@ -15,12 +15,12 @@ class ApplicationMailer < ActionMailer::Base
   def hcb_email_with_name_of(object)
     name = object.try(:name)
     if name.present?
-      name += " via HCB"
+      name += " via HCB (Cyteon's Instance)"
     else
-      name = "HCB"
+      name = "HCB (Cyteon's Instance)"
     end
 
-    email_address_with_name("hcb@hackclub.com", name)
+    email_address_with_name("hcb@cyteon.dev", name)
   end
 
 end

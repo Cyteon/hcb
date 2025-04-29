@@ -4,6 +4,9 @@ require "active_support/core_ext/integer/time"
 require_relative "../../app/lib/credentials"
 
 Rails.application.configure do
+  # Use Sidekiq
+  config.active_job.queue_adapter = :sidekiq
+
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Prepare the ingress controller used to receive mail
@@ -99,7 +102,9 @@ Rails.application.configure do
   Rails.application.routes.default_url_options[:host] = Credentials.fetch(:TEST_URL_HOST)
 
   # SMTP config
-  config.action_mailer.delivery_method = :letter_opener_web
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_caching = false
+
 
   config.active_job.queue_adapter = :sidekiq
 
