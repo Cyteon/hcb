@@ -17,6 +17,7 @@ class LoginsController < ApplicationController
 
   # view to log in
   def new
+    @return_to = url_from(params[:return_to])
     render "users/logout" if current_user
 
     @prefill_email = params[:email] if params[:email].present?
@@ -144,7 +145,7 @@ class LoginsController < ApplicationController
     if @login.complete? && @login.user_session.nil?
       @login.update(user_session: sign_in(user: @login.user, fingerprint_info:))
       if @user.full_name.blank? || @user.phone_number.blank?
-        redirect_to edit_user_path(@user.slug)
+        redirect_to edit_user_path(@user.slug, return_to: params[:return_to])
       else
         redirect_to(params[:return_to] || root_path)
       end
@@ -187,7 +188,8 @@ class LoginsController < ApplicationController
       @login = User.find_by_email(session[:auth_email]).logins.create
       cookies.signed["browser_token_#{@login.hashid}"] = { value: @login.browser_token, expires: Login::EXPIRATION.from_now }
     else
-      raise ActionController::ParameterMissing.new("Missing login.")
+      flash[:error] = "Please try again."
+      redirect_to auth_users_path
     end
   end
 

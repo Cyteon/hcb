@@ -65,6 +65,7 @@ class AchTransfer < ApplicationRecord
   include Commentable
   include Payoutable
   include Payment
+  include Freezable
 
   def payment_recipient_attributes
     %i[bank_name account_number routing_number]
@@ -103,7 +104,6 @@ class AchTransfer < ApplicationRecord
   validates :company_name, length: { maximum: 16 }, allow_blank: true
 
   has_one :t_transaction, class_name: "Transaction", inverse_of: :ach_transfer
-  has_one :grant, required: false
   has_one :raw_pending_outgoing_ach_transaction, foreign_key: :ach_transaction_id
   has_one :canonical_pending_transaction, through: :raw_pending_outgoing_ach_transaction
   has_one :employee_payment, class_name: "Employee::Payment", as: :payout
@@ -173,7 +173,7 @@ class AchTransfer < ApplicationRecord
   before_validation { self.recipient_name = recipient_name.presence&.strip }
 
   before_validation do
-    self.company_name = event.short_name if company_name.blank?
+    self.company_name = "HCB (Hack Club)" # Column requires "Hack Club" to be included in the company_name for all outgoing ACHs
   end
 
   # Eagerly create HcbCode object
@@ -192,8 +192,7 @@ class AchTransfer < ApplicationRecord
   def send_ach_transfer!
     return unless may_mark_in_transit?
 
-    account_number_id = event.column_account_number&.column_id ||
-                        Credentials.fetch(:COLUMN, ColumnService::ENVIRONMENT, :DEFAULT_ACCOUNT_NUMBER)
+    account_number_id = (event.column_account_number || event.create_column_account_number)&.column_id
 
     column_ach_transfer = ColumnService.post("/transfers/ach", {
       idempotency_key: self.id.to_s,
@@ -202,6 +201,7 @@ class AchTransfer < ApplicationRecord
       type: "CREDIT",
       entry_class_code: "PPD",
       counterparty: {
+        name: recipient_name,
         account_number:,
         routing_number:,
       },
@@ -252,7 +252,7 @@ class AchTransfer < ApplicationRecord
   def reverse!(reason)
     raise ArgumentError, "must have been sent" unless column_id
 
-    ColumnService.post "/transfers/ach/#{column_id}/reverse", reason:
+    ColumnService.post "/transfers/ach/#{column_id}/reverse", reason:, idempotency_key: self.id.to_s
   end
 
   def pending_expired?
@@ -269,8 +269,6 @@ class AchTransfer < ApplicationRecord
     end
 
     update!(processor: processed_by) if processed_by.present?
-
-    grant.mark_fulfilled! if grant.present?
   end
 
   def status
@@ -320,7 +318,7 @@ class AchTransfer < ApplicationRecord
   end
 
   def smart_memo
-    recipient_name.to_s.upcase
+    recipient_name.to_s
   end
 
   def canonical_transactions

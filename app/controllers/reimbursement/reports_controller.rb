@@ -68,7 +68,7 @@ module Reimbursement
       authorize @report
       @commentable = @report
       @comments = @commentable.comments
-      @use_user_nav = @event.nil? || current_user == @user && !@event.users.include?(@user) && !admin_signed_in?
+      @use_user_nav = @event.nil? || current_user == @user && !@event.users.include?(@user) && !auditor_signed_in?
       @editing = params[:edit].to_i
 
     end
@@ -172,7 +172,7 @@ module Reimbursement
         flash[:error] = e.message
       end
 
-      # ReimbursementJob::Nightly.perform_later
+      # Reimbursement::NightlyJob.perform_later
 
       redirect_to @report
     end
@@ -189,7 +189,7 @@ module Reimbursement
         flash[:error] = e.message
       end
 
-      # ReimbursementJob::Nightly.perform_later
+      # Reimbursement::NightlyJob.perform_later
 
       redirect_to @report
     end

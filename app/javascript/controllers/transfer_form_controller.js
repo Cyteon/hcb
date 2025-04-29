@@ -13,13 +13,12 @@ export default class extends Controller {
     // Wizard slide answer targets
     'answerText',
     'answerCTA',
-    'helperText',
+    'learnMore',
   ]
 
   static values = {
     ach: String,
     check: String,
-    paypal: String,
     wire: String,
     disbursement: String,
   }
@@ -29,19 +28,22 @@ export default class extends Controller {
       id: 1,
       question: 'Does your recipient live within the US?',
       yes: 2,
-      no: 3,
+      no: {
+        type: 'International wire',
+        link: 'https://help.hcb.hackclub.com/article/61-what-are-international-wires',
+      },
     },
     {
       id: 2,
       question: 'Do you have their account & routing number?',
-      yes: 'ach',
-      no: 'check',
-    },
-    {
-      id: 3,
-      question: 'Does your recipient have a PayPal account?',
-      yes: 'paypal',
-      no: 'wire',
+      yes: {
+        type: 'ACH transfer',
+        link: 'https://help.hcb.hackclub.com/article/60-what-is-an-ach-transfer',
+      },
+      no: {
+        type: 'Mailed check',
+        link: 'https://help.hcb.hackclub.com/article/25-what-are-money-transfers',
+      },
     },
   ]
 
@@ -71,10 +73,9 @@ export default class extends Controller {
       this.yesClickHandler = () => this.renderQuestion(question.yes)
       this.noClickHandler = () => this.renderQuestion(question.no)
     } else {
-      this.answerTextTarget.innerHTML = `${payload === 'ach' ? 'ACH' : payload} transfer`
-      this.answerCTATarget.dataset.answer = payload
-
-      this.helperTextTarget.innerHTML = `We'd recommend sending ${payload === 'ach' || payload === 'international' ? 'an' : 'a'}`
+      this.answerTextTarget.innerHTML = payload.type
+      this.answerCTATarget.dataset.answer = payload.type
+      this.learnMoreTarget.href = payload.link
 
       this.answerTarget.hidden = false
       this.wizardTarget.hidden = true
