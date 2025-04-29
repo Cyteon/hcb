@@ -36,7 +36,7 @@ module Reimbursement
       def rate
         return 67 if created_at < Date.new(2025, 1, 1)
 
-        70
+        10000
       end
 
       def value_label
